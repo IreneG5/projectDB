@@ -17,3 +17,8 @@ db = MySQLDatabase(db_config.get('db_name'),
 tables = db.get_available_tables()
 print tables
 
+# Get all the available columns for our
+# articles table and print them out
+columns = db.get_columns_for_table('profiles')
+print columns
+
