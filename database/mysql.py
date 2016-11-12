@@ -1,5 +1,5 @@
 import MySQLdb as _mysql
-
+from collections import namedtuple
 
 class MySQLDatabase(object):
     """
@@ -65,4 +65,66 @@ class MySQLDatabase(object):
 
         return self.columns
 
+    def select(self, table, columns=None, named_tuples=False, **kwargs):
+        """
+        We'll create our `select` method in order
+        to make it simpler for extracting data from
+        the database.
+        select(table_name, [list_of_column_names])
+        """
+        sql_str = "SELECT "
 
+        # add columns or just use the wildcard
+        if not columns:
+            sql_str += " * "
+        else:
+            for column in columns:
+                sql_str += "%s, " % column
+
+            sql_str = sql_str[:-2]  # remove the last comma!
+
+        # add the table to the SELECT query
+        sql_str += " FROM `%s`.`%s`" % (self.database_name, table)
+
+        # if there's a JOIN clause attached
+        if kwargs.has_key('join'):
+            sql_str += " JOIN %s" % kwargs.get('join')
+
+        # if there's a WHERE clause attached
+        if kwargs.has_key('where'):
+            sql_str += " WHERE %s " % kwargs.get('where')
+
+        if kwargs.has_key('limit'):
+            sql_str += "LIMIT %s" % kwargs.get('limit')
+
+        if kwargs.has_key('order_asc'):
+            sql_str += "ORDER BY %s" % kwargs.get('order_asc')
+
+        if kwargs.has_key('order_desc'):
+            sql_str += "ORDER BY %s DESC" % kwargs.get('order_desc')
+
+        sql_str += ";"  # Finalise out SQL string
+
+        cursor = self.db.cursor()
+        cursor.execute(sql_str)
+
+        if named_tuples:
+            results = self.convert_to_named_tuples(cursor)
+        else:
+            results = cursor.fetchall()
+
+        cursor.close()
+
+        return results
+
+    def convert_to_named_tuples(self, cursor):
+        results = None
+        names = " ".join(d[0] for d in cursor.description)
+        klass = namedtuple('Results', names)
+
+        try:
+            results = map(klass._make, cursor.fetchall())
+        except _mysql.ProgrammingError, e:
+            print e
+
+        return results
