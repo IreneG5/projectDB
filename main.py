@@ -54,3 +54,6 @@ db.delete('orders', id="=3")
 
 # We can also use multiple WHERE clauses!
 db.delete('orders', id=">4", amount=">1")
+
+
+
